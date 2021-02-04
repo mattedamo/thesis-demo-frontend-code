@@ -1,0 +1,46 @@
+name: delete-branch
+
+on:
+  delete
+
+jobs:
+  
+  trigger-workflow:
+    name: Trigger workflow
+    runs-on: ubuntu-latest
+    if: contains(
+          github.event.ref
+          , 'features') ||
+        contains(
+          github.event.ref
+          , 'releases')    
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with: 
+        python-version: "3.x"
+    
+    - run: pip install PyYAML
+      name: Install py dependencies
+    
+    - name: Validation of config file
+      run: python scripts/validation-config-file.py
+
+    - name: Create outputs from config file
+      run: |
+        echo "##[set-output name=infrastructure-repo;]$(python scripts/create-outputs-from-config.py infrastructure-repo)"
+        echo "##[set-output name=tier;]$(python scripts/create-outputs-from-config.py tier)"
+      id: from-config
+      
+    - name: Trigger infrastructure repo workflow
+      uses: benc-uk/workflow-dispatch@v1
+      with:
+        workflow: delete-kustomize-dir
+        ref: master
+        inputs: '{"code-branch" : "${{ github.event.ref }}", "tier" : "${{steps.from-config.outputs.tier}}"}'
+        repo: ${{ github.repository_owner }}/${{steps.from-config.outputs.infrastructure-repo}}
+        token: ${{ secrets.PAT_TOKEN }}

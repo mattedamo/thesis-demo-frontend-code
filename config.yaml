@@ -1,0 +1,8 @@
+docker-backend-repo: thesis-demo-backend
+docker-frontend-repo: thesis-demo-frontend
+infrastructure-repo: thesis-demo-infrastructure
+backup-input-repo: thesis-demo-backup-files
+tier: frontend
+default-input-prod: false
+default-input-release: false
+default-input-feature: false

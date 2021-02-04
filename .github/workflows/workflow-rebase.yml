@@ -1,0 +1,58 @@
+name: rebase-on-pr
+
+on:
+  pull_request:
+    types: closed
+
+jobs:
+  
+  hotfix-merged:
+    name: Update develop or releases branch because of hotfix pull request merged
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        && contains(github.head_ref, 'hotfix') 
+  
+    steps:
+
+    - name: checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with: 
+        python-version: "3.x"
+
+    - name: Extract branch where to rebase
+      shell: bash
+      run: echo "##[set-output name=branch;]$(python scripts/rebase-in-releases.py $(git branch -r) )"
+      id: extract_branch
+    
+    - run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout ${{steps.extract_tag.outputs.new-tag}}
+          git rebase master
+          git push origin ${{steps.extract_branch.outputs.branch}}
+  
+  releases-merged:
+    name: Update develop branch because of releases pull request merged
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        &&  contains(github.head_ref, 'releases') 
+    steps:
+
+    - name: checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    
+    - run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout develop
+          git rebase master
+          git push origin develop
+    
+    
